@@ -1,0 +1,54 @@
+module io.github.mchav.freoquiz.MainActivity where
+
+import io.github.mchav.freoquiz.Types
+
+import Data.List
+
+questions :: [String]
+questions = ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]
+
+answers :: [Bool]
+answers = cycle [True, False]
+
+qa :: [(String, Bool)]
+qa = zip questions answers
+
+nextQuestion :: String -> String
+nextQuestion q = maybe q id (lookup q $ zip questions ((tail questions) ++ [head questions]))
+
+previousQuestion :: String -> String
+previousQuestion q = maybe q id (lookup q $ zip (reverse questions) ((tail (reverse questions)) ++ [head questions]))
+
+handler :: MutableIO Context -> MutableIO TextView -> Bool -> MutableIO View -> IO ()
+handler c tv b v = do
+    btn <- (downcast v >>= either (\cce -> error $ "Cast failed.") return) :: IO (MutableIO Button)
+    cs <- tv.getText
+    let q = cs.toString
+    let ans = maybe False id (lookup q qa)
+    let next = nextQuestion cs.toString
+    let toastText = if ans == b then "Correct" else "Incorrect"
+    sb <- Toast.makeText c toastText Toast.lengthShort
+    sb.show
+    tv.setText next
+
+onCreateF :: MutableIO MainActivity -> IO ()
+onCreateF !this = do
+	context <- this.getApplicationContext
+	this.setContentView activityMain
+	btnFalse <- this.findViewById btnFalseId
+	btnTrue <- this.findViewById btnTrueId
+	textv <- this.findViewById questionText
+	txt <- (downcast textv >>= either (\cce -> error $ "Cast failed.") return) :: IO (MutableIO TextView)
+	listenerFalse <- onClick (handler context txt False)
+	listenerTrue <- onClick (handler context txt True)
+	btnFalse.setOnClickListener listenerFalse
+	btnTrue.setOnClickListener listenerTrue
+
+native module type MainActivity where {
+	@Override
+    public void onCreate(android.os.Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        final frege.run7.Func.U<Object,Short> res = RunTM.<frege.run7.Func.U<Object,Short>>cast(onCreateF(this)).call();
+		frege.prelude.PreludeBase.TST.run(res).call();
+    }
+}

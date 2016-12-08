@@ -1,0 +1,83 @@
+module io.github.mchav.freoquiz.Types where
+
+pure native activityMain "io.github.mchav.freoquiz.R.layout.activity_main" :: Int
+
+pure native questionText "io.github.mchav.freoquiz.R.id.question_text" :: Int
+
+pure native toolbarId "io.github.mchav.freoquiz.R.id.toolbar" :: Int
+
+pure native btnFalseId "io.github.mchav.freoquiz.R.id.btnFalse" :: Int
+
+pure native btnTrueId "io.github.mchav.freoquiz.R.id.btnTrue" :: Int
+
+native onClick "io.github.mchav.freoquiz.Types.onClickHandler" :: (MutableIO View -> IO ()) -> IO (MutableIO OnClickListener)
+
+packageName = "io.github.mchav.freoquiz"
+
+data Menu = native android.view.Menu
+
+data MenuItem = native android.view.MenuItem
+
+data Bundle = native android.os.Bundle
+
+data View = native android.view.View where
+    native setOnClickListener :: MutableIO View -> MutableIO OnClickListener -> IO ()
+
+data Context = native android.content.Context
+
+data MainActivity = native android.app.Activity where
+	native getApplicationContext :: MutableIO MainActivity -> IO (MutableIO Context)
+	native findViewById :: MutableIO MainActivity -> Int -> IO (MutableIO View)
+	native setContentView :: MutableIO MainActivity -> Int -> IO ()
+	native setActionBar :: MutableIO MainActivity -> MutableIO Toolbar -> IO ()
+
+data Toolbar = native android.widget.Toolbar
+
+data OnClickListener = native android.view.View.OnClickListener
+
+data Button = native android.widget.Button where
+    native setOnClickListener :: MutableIO Button -> MutableIO OnClickListener -> IO ()
+    native getText :: MutableIO Button -> IO CharSequence
+
+instance CastTarget Toolbar where
+    native downcast "(android.widget.Toolbar)" :: MutableIO View -> IO (ClassCastException | MutableIO Toolbar)
+
+data TextView = native android.widget.TextView where
+	native new :: MutableIO Context -> STMutable RealWorld TextView
+	native setText :: MutableIO TextView -> String -> IO ()
+	native getText :: MutableIO TextView -> IO CharSequence
+
+data ClassCastException = native java.lang.ClassCastException
+
+class CastTarget a where
+    downcast :: MutableIO View -> IO (ClassCastException | MutableIO a)
+
+instance CastTarget TextView where
+    native downcast "(android.widget.TextView)" :: MutableIO View -> IO (ClassCastException | MutableIO TextView)
+
+instance CastTarget Button where
+    native downcast "(android.widget.Button)" :: MutableIO View -> IO (ClassCastException | MutableIO Button)
+
+data Toast = native android.widget.Toast where
+    native lengthLong "android.widget.Toast.LENGTH_LONG" :: Int
+    native lengthShort "android.widget.Toast.LENGTH_SHORT" :: Int
+    native makeText "android.widget.Toast.makeText" :: MutableIO Context -> String -> Int -> IO (MutableIO Toast)
+    native show :: MutableIO Toast -> IO ()
+
+native module where {
+    public static android.view.View.OnClickListener
+        onClickHandler(final frege.run7.Func.U<android.view.View, frege.run7.Func.U<RealWorld,Short>> lambda) {
+        return new android.view.View.OnClickListener() {
+            @Override
+            public void onClick(android.view.View view) {
+                try {
+                    final frege.run7.Func.U<Object,Short> res = RunTM.<frege.run7.Func.U<Object,Short>>cast(lambda.apply(Thunk.lazy(view)).call()).call();
+                    frege.prelude.PreludeBase.TST.run(res).call();
+                } catch(RuntimeException re) {
+                    re.printStackTrace();
+                    throw re;
+                }
+            }
+        };
+    }
+}

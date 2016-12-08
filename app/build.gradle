@@ -1,0 +1,63 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 24
+    buildToolsVersion "25.0.1"
+    defaultConfig {
+        applicationId "io.github.mchav.freoquiz"
+        minSdkVersion 15
+        targetSdkVersion 24
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    dexOptions {
+        javaMaxHeapSize "4g"
+    }
+
+    defaultConfig {
+        minSdkVersion 21
+        multiDexEnabled true
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += 'src/main/frege/io/github/mchav/freoquiz'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:24.2.1'
+    compile 'com.android.support:design:24.2.1'
+    compile files('C:\\Users\\mscha\\Downloads\\frege-3.24.100.1-jdk7.jar')
+    testCompile 'junit:junit:4.12'
+}
+
+project.afterEvaluate {
+    extensions.compileFrege = {
+        description = 'Compile Frege to Java'
+        javaexec {
+            configurations.compile.resolve().each {
+                classpath += files(it.toString())
+            }
+            main = 'frege.compiler.Main'
+            def a = ['-j', '-target', '1.7', '-v', '-inline', '-d', 'src/main/java', '-make', '-fp', 'C:\\Users\\mscha\\AppData\\Local\\Android\\sdk\\platforms\\android-24\\android.jar', '-sp', 'src\\main\\frege\\io\\github\\mchav\\freoquiz', 'Types.fr', 'MainActivity.fr']
+            println 'Frege compiler args: "' + a.join(' ') + '"'
+            args (*a)
+        }
+    }
+
+    compileDebugJavaWithJavac.doFirst { compileFrege() }
+}
