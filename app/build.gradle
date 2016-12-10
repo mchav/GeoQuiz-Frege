@@ -53,7 +53,7 @@ project.afterEvaluate {
                 classpath += files(it.toString())
             }
             main = 'frege.compiler.Main'
-            def a = ['-j', '-target', '1.7', '-v', '-inline', '-d', 'src/main/java', '-make', '-fp', 'C:\\Users\\mscha\\AppData\\Local\\Android\\sdk\\platforms\\android-24\\android.jar', '-sp', 'src\\main\\frege\\io\\github\\mchav\\freoquiz', 'Types.fr', 'MainActivity.fr']
+            def a = ['-j', '-target', '1.7', '-v', '-inline', '-d', 'src/main/java', '-make', '-fp', 'C:\\Users\\mscha\\AppData\\Local\\Android\\sdk\\platforms\\android-24\\android.jar', '-sp', 'src\\main\\frege\\io\\github\\mchav\\freoquiz', 'Types.fr', 'MainActivity.fr', 'CheatActivity.fr']
             println 'Frege compiler args: "' + a.join(' ') + '"'
             args (*a)
         }

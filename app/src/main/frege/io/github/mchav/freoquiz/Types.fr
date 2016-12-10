@@ -2,13 +2,37 @@ module io.github.mchav.freoquiz.Types where
 
 pure native activityMain "io.github.mchav.freoquiz.R.layout.activity_main" :: Int
 
+pure native activityCheat "io.github.mchav.freoquiz.R.layout.activity_cheat" :: Int
+
 pure native questionText "io.github.mchav.freoquiz.R.id.question_text" :: Int
+
+pure native answerTextId "io.github.mchav.freoquiz.R.id.answerTextView" :: Int
 
 pure native toolbarId "io.github.mchav.freoquiz.R.id.toolbar" :: Int
 
 pure native btnFalseId "io.github.mchav.freoquiz.R.id.btnFalse" :: Int
 
 pure native btnTrueId "io.github.mchav.freoquiz.R.id.btnTrue" :: Int
+
+pure native btnCheatId "io.github.mchav.freoquiz.R.id.btnCheat" :: Int
+
+pure native showAnswerButtonId  "io.github.mchav.freoquiz.R.id.showAnswerButton" :: Int
+
+pure native btnNextId "io.github.mchav.freoquiz.R.id.btnNext" :: Int
+
+pure native btnPrevId "io.github.mchav.freoquiz.R.id.btnPrev" :: Int
+
+pure native questionOceans "io.github.mchav.freoquiz.R.string.question_oceans" :: Int
+
+pure native questionMidEast "io.github.mchav.freoquiz.R.string.question_mideast" :: Int
+
+pure native questionAfrica "io.github.mchav.freoquiz.R.string.question_africa" :: Int
+
+pure native questionAmericas "io.github.mchav.freoquiz.R.string.question_americas" :: Int
+
+pure native questionAsia "io.github.mchav.freoquiz.R.string.question_asia" :: Int
+
+data Question = Question { text :: String, answer :: Bool}
 
 native onClick "io.github.mchav.freoquiz.Types.onClickHandler" :: (MutableIO View -> IO ()) -> IO (MutableIO OnClickListener)
 
@@ -21,15 +45,27 @@ data MenuItem = native android.view.MenuItem
 data Bundle = native android.os.Bundle
 
 data View = native android.view.View where
+    pure native visible "android.view.View.VISIBLE" :: Int
+    pure native invisible "android.view.View.INVISIBLE" :: Int
     native setOnClickListener :: MutableIO View -> MutableIO OnClickListener -> IO ()
 
 data Context = native android.content.Context
 
-data MainActivity = native android.app.Activity where
-	native getApplicationContext :: MutableIO MainActivity -> IO (MutableIO Context)
-	native findViewById :: MutableIO MainActivity -> Int -> IO (MutableIO View)
-	native setContentView :: MutableIO MainActivity -> Int -> IO ()
-	native setActionBar :: MutableIO MainActivity -> MutableIO Toolbar -> IO ()
+data Intent = native android.content.Intent where
+    native new :: () -> STMutable RealWorld Intent
+                | MutableIO Context -> Class a -> STMutable RealWorld Intent
+    native getBooleanExtra :: MutableIO Intent -> String -> Bool -> IO Bool
+    native putExtra :: MutableIO Intent -> String -> Bool -> IO ()
+
+data Activity = native android.app.Activity where
+	native getApplicationContext :: MutableIO Activity -> IO (MutableIO Context)
+	native resultOk "android.app.Activity.RESULT_OK" :: Int
+	native getIntent :: MutableIO Activity -> IO (MutableIO Intent)
+	native findViewById :: MutableIO Activity -> Int -> IO (MutableIO View)
+	native setContentView :: MutableIO Activity -> Int -> IO ()
+	native setActionBar :: MutableIO Activity -> MutableIO Toolbar -> IO ()
+	native setResult :: MutableIO Activity -> Int -> MutableIO Intent -> IO ()
+	native startActivityForResult :: MutableIO Activity -> MutableIO Intent -> Int -> IO ()
 
 data Toolbar = native android.widget.Toolbar
 
@@ -37,6 +73,7 @@ data OnClickListener = native android.view.View.OnClickListener
 
 data Button = native android.widget.Button where
     native setOnClickListener :: MutableIO Button -> MutableIO OnClickListener -> IO ()
+    native setVisibility :: MutableIO Button -> Int -> IO ()
     native getText :: MutableIO Button -> IO CharSequence
 
 instance CastTarget Toolbar where
@@ -46,6 +83,7 @@ data TextView = native android.widget.TextView where
 	native new :: MutableIO Context -> STMutable RealWorld TextView
 	native setText :: MutableIO TextView -> String -> IO ()
 	native getText :: MutableIO TextView -> IO CharSequence
+	native setVisibility :: MutableIO TextView -> Int -> IO ()
 
 data ClassCastException = native java.lang.ClassCastException
 
@@ -63,6 +101,16 @@ data Toast = native android.widget.Toast where
     native lengthShort "android.widget.Toast.LENGTH_SHORT" :: Int
     native makeText "android.widget.Toast.makeText" :: MutableIO Context -> String -> Int -> IO (MutableIO Toast)
     native show :: MutableIO Toast -> IO ()
+
+asTextView :: MutableIO Activity -> Int -> IO (MutableIO TextView)
+asTextView this res = do
+    v <- this.findViewById res
+    (downcast v >>= either (\cce -> error $ "Cast failed.") return) :: IO (MutableIO TextView)
+
+asButton :: MutableIO Activity -> Int -> IO (MutableIO Button)
+asButton this res = do
+    v <- this.findViewById res
+    (downcast v >>= either (\cce -> error $ "Cast failed.") return) :: IO (MutableIO Button)
 
 native module where {
     public static android.view.View.OnClickListener

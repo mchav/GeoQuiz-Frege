@@ -1,54 +1,88 @@
 module io.github.mchav.freoquiz.MainActivity where
 
 import io.github.mchav.freoquiz.Types
+import io.github.mchav.freoquiz.CheatActivity as CheatActivity()
 
 import Data.List
 
-questions :: [String]
-questions = ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]
+requestCheatCode :: Int
+requestCheatCode = 0
 
-answers :: [Bool]
-answers = cycle [True, False]
-
-qa :: [(String, Bool)]
-qa = zip questions answers
+questions :: [Question]
+questions = [ Question { text = "The Pacific Ocean is larger than the Atlantic Ocean", answer = True}
+            , Question { text = "The Suez Canal connects the Red Sea and the Indian Ocean", answer = False}
+            , Question { text = "The source of the Nile river is in Egypt", answer = False}
+            , Question { text = "The Amazon river is the longest river in the Americas", answer = True}
+            , Question { text = "Lake Baikal is the world\'s oldest and deepest freshwater lake", answer = True}]
 
 nextQuestion :: String -> String
-nextQuestion q = maybe q id (lookup q $ zip questions ((tail questions) ++ [head questions]))
+nextQuestion q = maybe q id (lookup q (sequenceQuestions id))
 
 previousQuestion :: String -> String
-previousQuestion q = maybe q id (lookup q $ zip (reverse questions) ((tail (reverse questions)) ++ [head questions]))
+previousQuestion q = maybe q id (lookup q (sequenceQuestions reverse))
+
+sequenceQuestions :: ([String] -> [String]) -> [(String, String)]
+sequenceQuestions f = zip (f questionStrings) ((tail (f questionStrings)) ++ [head questionStrings])
+            where questionStrings = map (\x -> x.text) questions
 
 handler :: MutableIO Context -> MutableIO TextView -> Bool -> MutableIO View -> IO ()
 handler c tv b v = do
-    btn <- (downcast v >>= either (\cce -> error $ "Cast failed.") return) :: IO (MutableIO Button)
-    cs <- tv.getText
-    let q = cs.toString
-    let ans = maybe False id (lookup q qa)
-    let next = nextQuestion cs.toString
+    q <- liftM (\cs -> cs.toString) tv.getText
+    let ans = maybe False id (fmap (\x -> x.answer) (find (\x -> x.text == q) questions))
     let toastText = if ans == b then "Correct" else "Incorrect"
     sb <- Toast.makeText c toastText Toast.lengthShort
     sb.show
-    tv.setText next
+    tv.setText (nextQuestion q)
 
-onCreateF :: MutableIO MainActivity -> IO ()
+cheatHandler :: MutableIO Activity -> MutableIO Context -> MutableIO TextView -> MutableIO View -> IO ()
+cheatHandler this c tv v = do
+    q <- liftM (\cs -> cs.toString) tv.getText
+    let ansIsTrue = maybe False id (fmap (\x -> x.answer) (find (\x -> x.text == q) questions))
+    i <- CheatActivity.newIntent c ansIsTrue
+    this.startActivityForResult i requestCheatCode
+
+navigationHandler :: MutableIO Context -> MutableIO TextView -> Bool -> MutableIO View -> IO ()
+navigationHandler c tv b v = do
+    q <- liftM (\cs -> cs.toString) tv.getText
+    if b == True then tv.setText (nextQuestion q) else tv.setText (previousQuestion q)
+
+onCreateF :: MutableIO Activity -> IO ()
 onCreateF !this = do
 	context <- this.getApplicationContext
 	this.setContentView activityMain
 	btnFalse <- this.findViewById btnFalseId
 	btnTrue <- this.findViewById btnTrueId
-	textv <- this.findViewById questionText
-	txt <- (downcast textv >>= either (\cce -> error $ "Cast failed.") return) :: IO (MutableIO TextView)
+	btnNext <- this.findViewById btnNextId
+	btnPrev <- this.findViewById btnPrevId
+	btnCheat <- this.findViewById btnCheatId
+	txt <- asTextView this questionText
+	txt.setText ((head questions).text)
+	listenerNext <- onClick (navigationHandler context txt True)
+	listenerPrev <- onClick (navigationHandler context txt False)
 	listenerFalse <- onClick (handler context txt False)
 	listenerTrue <- onClick (handler context txt True)
+	listenerCheat <- onClick (cheatHandler this context txt)
 	btnFalse.setOnClickListener listenerFalse
 	btnTrue.setOnClickListener listenerTrue
+	btnPrev.setOnClickListener listenerPrev
+	btnNext.setOnClickListener listenerNext
+	btnCheat.setOnClickListener listenerCheat
 
-native module type MainActivity where {
+native module type Activity where {
 	@Override
     public void onCreate(android.os.Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         final frege.run7.Func.U<Object,Short> res = RunTM.<frege.run7.Func.U<Object,Short>>cast(onCreateF(this)).call();
 		frege.prelude.PreludeBase.TST.run(res).call();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        //if (resultCode != Activity.RESULT_OK) return;
+        /*
+        if (requestCode == 0 && data != null) {
+            mCheated[mCurrentIndex] = CheatActivity.wasAnswerShown(data);
+        }
+        */
     }
 }
