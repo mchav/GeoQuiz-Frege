@@ -1,5 +1,3 @@
-import groovy.io.FileType
-
 apply plugin: 'com.android.application'
 
 android {
@@ -85,7 +83,7 @@ project.afterEvaluate {
             def applicationId =  android.defaultConfig.applicationId.replace('.' as char, File.separatorChar)
             def dir = new File(rootProject.projectDir.path +
                     "/app/build/intermediates/exploded-aar/com.android.support/".replace('/' as char, File.separatorChar))
-            dir.eachFileRecurse (FileType.FILES) { file ->
+            dir.eachFileRecurse (groovy.io.FileType.FILES) { file ->
                 if (file.path.endsWith(".jar")) {
                     list << file.path
                 }
