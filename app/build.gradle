@@ -1,3 +1,5 @@
+import groovy.io.FileType
+
 apply plugin: 'com.android.application'
 
 android {
@@ -22,14 +24,22 @@ android {
 
     sourceSets {
         main {
-            java.srcDirs += 'src/main/frege/io/github/mchav/freoquiz'
+            java.srcDirs += 'src/main/frege/'
         }
     }
 
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            debuggable false
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
@@ -41,7 +51,6 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:24.2.1'
     compile 'com.android.support:design:24.2.1'
-    compile files('C:\\Users\\mscha\\Downloads\\frege-3.24.100.1-jdk7.jar')
     testCompile 'junit:junit:4.12'
 }
 
@@ -53,11 +62,41 @@ project.afterEvaluate {
                 classpath += files(it.toString())
             }
             main = 'frege.compiler.Main'
-            def a = ['-j', '-target', '1.7', '-v', '-inline', '-d', 'src/main/java', '-make', '-fp', 'C:\\Users\\mscha\\AppData\\Local\\Android\\sdk\\platforms\\android-24\\android.jar', '-sp', 'src\\main\\frege\\io\\github\\mchav\\freoquiz', 'Types.fr', 'MainActivity.fr', 'CheatActivity.fr']
+            
+            def rootDir = project.rootDir
+            def localProperties = new File(rootDir, "local.properties")
+            def androidJarPath = ""
+            if (localProperties.exists()) {
+                Properties properties = new Properties()
+                localProperties.withInputStream { instr ->
+                    properties.load(instr)
+                }
+                def sdkDir = properties.getProperty('sdk.dir')
+                androidJarPath = sdkDir +
+                        String.format("/platforms/%s/android.jar",
+                                android.compileSdkVersion).replace('/' as char, File.separatorChar)
+            }
+
+            // 'mockAndroidJar' for compilation
+            classpath += files(androidJarPath)
+
+            // list of all aar dependencies
+            def list = [androidJarPath]
+            def applicationId =  android.defaultConfig.applicationId.replace('.' as char, File.separatorChar)
+            def dir = new File(rootProject.projectDir.path +
+                    "/app/build/intermediates/exploded-aar/com.android.support/".replace('/' as char, File.separatorChar))
+            dir.eachFileRecurse (FileType.FILES) { file ->
+                if (file.path.endsWith(".jar")) {
+                    list << file.path
+                }
+            }
+            def appPath = "src/main/frege/".replace('/' as char, File.separatorChar) + applicationId
+            def a = ['-j', '-target', '1.7', '-v', '-inline', '-d', 'src/main/java', '-make',
+                     '-fp', list.join(';'),
+                     '-sp', appPath, appPath ]
             println 'Frege compiler args: "' + a.join(' ') + '"'
             args (*a)
         }
     }
-
-    compileDebugJavaWithJavac.doFirst { compileFrege() }
+    compileFrege()
 }

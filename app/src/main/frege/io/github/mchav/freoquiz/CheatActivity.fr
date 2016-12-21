@@ -1,13 +1,24 @@
 module io.github.mchav.freoquiz.CheatActivity where
 
-import io.github.mchav.freoquiz.Types
+import froid.app.Activity
+import froid.content.Context
+import froid.content.Intent
+import froid.view.View
+import froid.widget.Button
+import froid.widget.TextView
+import froid.widget.Toast
+
+native module type Activity where {}
 
 pure native cheatActivity "io.github.mchav.freoquiz.CheatActivity.class" :: Class a
+pure native activityCheat "io.github.mchav.freoquiz.R.layout.activity_cheat" :: Int
+pure native showAnswerButtonId "io.github.mchav.freoquiz.R.id.showAnswerButton" :: Int
+pure native answerTextId "io.github.mchav.freoquiz.R.id.answerTextView" :: Int
 
 extraAnswerIsTrue = "io.github.mchav.freoquiz.answer_is_true"
 extraAnswerShown  = "io.github.mchav.geoquiz.answer_shown"
 
-cheatHandler :: MutableIO Button -> MutableIO TextView -> Bool -> MutableIO View -> IO ()
+cheatHandler :: MutableIO View -> MutableIO TextView -> Bool -> MutableIO View -> IO ()
 cheatHandler btn txt b v = do
     let res = if b == True then "True" else "False"
     txt.setText res
@@ -29,22 +40,12 @@ setAnswerShownResult activity b = do
     intentData.putExtra extraAnswerShown b
     activity.setResult (Activity.resultOk) intentData
 
-onCreateF :: MutableIO Activity -> IO ()
-onCreateF !this = do
+onCreate :: MutableIO Activity -> IO ()
+onCreate !this = do
     context <- this.getApplicationContext
     this.setContentView activityCheat
     intent <- this.getIntent
     answerIsTrue <- intent.getBooleanExtra extraAnswerIsTrue False
     answerTextView <- asTextView this answerTextId
-    showAnswer <- asButton this showAnswerButtonId
-    listenerCheat <- onClick (cheatHandler showAnswer answerTextView answerIsTrue)
-    showAnswer.setOnClickListener listenerCheat
-
-native module type Activity where {
-	@Override
-    public void onCreate(android.os.Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        final frege.run7.Func.U<Object,Short> res = RunTM.<frege.run7.Func.U<Object,Short>>cast(onCreateF(this)).call();
-		frege.prelude.PreludeBase.TST.run(res).call();
-    }
-}
+    showAnswer <- this.findViewById showAnswerButtonId
+    setOnClick showAnswer (cheatHandler showAnswer answerTextView answerIsTrue)

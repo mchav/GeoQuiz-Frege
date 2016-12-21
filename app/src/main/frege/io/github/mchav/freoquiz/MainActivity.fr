@@ -1,35 +1,55 @@
 module io.github.mchav.freoquiz.MainActivity where
 
-import io.github.mchav.freoquiz.Types
+import froid.app.Activity
+import froid.content.Context
+import froid.view.View
+import froid.widget.Button
+import froid.widget.TextView
+import froid.widget.Toast
+
 import io.github.mchav.freoquiz.CheatActivity as CheatActivity()
 
 import Data.List
 
+native module type Activity where {}
+
 requestCheatCode :: Int
 requestCheatCode = 0
+
+pure native activityMain "io.github.mchav.freoquiz.R.layout.activity_main" :: Int
+pure native btnPrevId "io.github.mchav.freoquiz.R.id.btnPrev" :: Int
+pure native btnNextId "io.github.mchav.freoquiz.R.id.btnNext" :: Int
+pure native btnFalseId "io.github.mchav.freoquiz.R.id.btnFalse" :: Int
+pure native btnTrueId "io.github.mchav.freoquiz.R.id.btnTrue" :: Int
+pure native btnCheatId "io.github.mchav.freoquiz.R.id.btnCheat" :: Int
+pure native questionText "io.github.mchav.freoquiz.R.id.question_text" :: Int
+
+data Question = Question { text :: String, answer :: Bool }
 
 questions :: [Question]
 questions = [ Question { text = "The Pacific Ocean is larger than the Atlantic Ocean", answer = True}
             , Question { text = "The Suez Canal connects the Red Sea and the Indian Ocean", answer = False}
             , Question { text = "The source of the Nile river is in Egypt", answer = False}
             , Question { text = "The Amazon river is the longest river in the Americas", answer = True}
-            , Question { text = "Lake Baikal is the world\'s oldest and deepest freshwater lake", answer = True}]
+            , Question { text = "Lake Baikal is the world\'s oldest and deepest freshwater lake", answer = True}
+            , Question { text = "The capital of Zimbabwe is Bulawayo", answer = False}
+            , Question { text = "Ghana is Africa\'s fastest growing economy", answer = True}]
 
 nextQuestion :: String -> String
-nextQuestion q = maybe q id (lookup q (sequenceQuestions id))
+nextQuestion !q = maybe q id (lookup q (sequenceQuestions questions))
 
 previousQuestion :: String -> String
-previousQuestion q = maybe q id (lookup q (sequenceQuestions reverse))
+previousQuestion !q = maybe q id (lookup q (sequenceQuestions (reverse questions) ))
 
-sequenceQuestions :: ([String] -> [String]) -> [(String, String)]
-sequenceQuestions f = zip (f questionStrings) ((tail (f questionStrings)) ++ [head questionStrings])
-            where questionStrings = map (\x -> x.text) questions
+sequenceQuestions :: [Question] -> [(String, String)]
+sequenceQuestions qs = zip (questionStrings) ((tail questionStrings) ++ [head questionStrings])
+            where questionStrings = map (\x -> x.text) qs
 
 handler :: MutableIO Context -> MutableIO TextView -> Bool -> MutableIO View -> IO ()
 handler c tv b v = do
     q <- liftM (\cs -> cs.toString) tv.getText
     let ans = maybe False id (fmap (\x -> x.answer) (find (\x -> x.text == q) questions))
-    let toastText = if ans == b then "Correct" else "Incorrect"
+    let toastText = if ans == b then "You got it right!" else "Wrong!"
     sb <- Toast.makeText c toastText Toast.lengthShort
     sb.show
     tv.setText (nextQuestion q)
@@ -46,43 +66,12 @@ navigationHandler c tv b v = do
     q <- liftM (\cs -> cs.toString) tv.getText
     if b == True then tv.setText (nextQuestion q) else tv.setText (previousQuestion q)
 
-onCreateF :: MutableIO Activity -> IO ()
-onCreateF !this = do
+onCreate :: MutableIO Activity -> IO ()
+onCreate this = do
 	context <- this.getApplicationContext
 	this.setContentView activityMain
-	btnFalse <- this.findViewById btnFalseId
-	btnTrue <- this.findViewById btnTrueId
-	btnNext <- this.findViewById btnNextId
-	btnPrev <- this.findViewById btnPrevId
-	btnCheat <- this.findViewById btnCheatId
 	txt <- asTextView this questionText
+	buttons <- mapM this.findViewById [btnFalseId, btnTrueId, btnNextId, btnPrevId, btnCheatId]
+	zipWithM setOnClick buttons [(handler context txt False), (handler context txt True), (navigationHandler context txt True), (navigationHandler context txt False), (cheatHandler this context txt)]
 	txt.setText ((head questions).text)
-	listenerNext <- onClick (navigationHandler context txt True)
-	listenerPrev <- onClick (navigationHandler context txt False)
-	listenerFalse <- onClick (handler context txt False)
-	listenerTrue <- onClick (handler context txt True)
-	listenerCheat <- onClick (cheatHandler this context txt)
-	btnFalse.setOnClickListener listenerFalse
-	btnTrue.setOnClickListener listenerTrue
-	btnPrev.setOnClickListener listenerPrev
-	btnNext.setOnClickListener listenerNext
-	btnCheat.setOnClickListener listenerCheat
 
-native module type Activity where {
-	@Override
-    public void onCreate(android.os.Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        final frege.run7.Func.U<Object,Short> res = RunTM.<frege.run7.Func.U<Object,Short>>cast(onCreateF(this)).call();
-		frege.prelude.PreludeBase.TST.run(res).call();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
-        //if (resultCode != Activity.RESULT_OK) return;
-        /*
-        if (requestCode == 0 && data != null) {
-            mCheated[mCurrentIndex] = CheatActivity.wasAnswerShown(data);
-        }
-        */
-    }
-}
