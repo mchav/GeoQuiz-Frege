@@ -96,9 +96,10 @@ project.afterEvaluate {
             if (!javaPath.exists()) {
                 javaPath.mkdirs()
             }
+
             def appPath = "src/main/frege/".replace('/' as char, File.separatorChar) + applicationId
             def a = ['-j', '-target', '1.7', '-v', '-inline', '-d', 'src/main/java', '-make',
-                     '-fp', list.join(';'),
+                     '-fp', list.join(File.pathSeparator),
                      '-sp', appPath, appPath ]
             println 'Frege compiler args: "' + a.join(' ') + '"'
             args (*a)
