@@ -81,12 +81,20 @@ project.afterEvaluate {
             // list of all aar dependencies
             def list = [androidJarPath]
             def applicationId =  android.defaultConfig.applicationId.replace('.' as char, File.separatorChar)
-            def dir = new File(rootProject.projectDir.path +
+            def support = new File(rootProject.projectDir.path +
                     "/app/build/intermediates/exploded-aar/com.android.support/".replace('/' as char, File.separatorChar))
-            dir.eachFileRecurse (groovy.io.FileType.FILES) { file ->
-                if (file.path.endsWith(".jar")) {
-                    list << file.path
+            if (support.exists()) {
+                support.eachFileRecurse(groovy.io.FileType.FILES) { file ->
+                    if (file.path.endsWith(".jar")) {
+                        list << file.path
+                    }
                 }
+            }
+
+            def javaPath = new File("app/src/main/java")
+
+            if (!javaPath.exists()) {
+                javaPath.mkdirs()
             }
             def appPath = "src/main/frege/".replace('/' as char, File.separatorChar) + applicationId
             def a = ['-j', '-target', '1.7', '-v', '-inline', '-d', 'src/main/java', '-make',
