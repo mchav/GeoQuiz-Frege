@@ -3,6 +3,7 @@ module io.github.mchav.freoquiz.CheatActivity where
 import froid.app.Activity
 import froid.content.Context
 import froid.content.Intent
+import froid.os.Bundle
 import froid.view.View
 import froid.widget.Button
 import froid.widget.TextView
@@ -15,15 +16,20 @@ pure native activityCheat "io.github.mchav.freoquiz.R.layout.activity_cheat" :: 
 pure native showAnswerButtonId "io.github.mchav.freoquiz.R.id.showAnswerButton" :: Int
 pure native answerTextId "io.github.mchav.freoquiz.R.id.answerTextView" :: Int
 
+data CheatUI = CheatUI { buttonShowAnswer :: MutableIO Button
+                       , textViewAnswer :: MutableIO TextView
+                       }
+
 extraAnswerIsTrue = "io.github.mchav.freoquiz.answer_is_true"
 extraAnswerShown  = "io.github.mchav.geoquiz.answer_shown"
 
-cheatHandler :: MutableIO View -> MutableIO TextView -> Bool -> MutableIO View -> IO ()
-cheatHandler btn txt b v = do
+cheatHandler :: MutableIO Activity -> CheatUI -> Bool -> MutableIO View -> IO ()
+cheatHandler this ui b v = do
     let res = if b == True then "True" else "False"
-    txt.setText res
-    txt.setVisibility (View.visible)
-    btn.setVisibility (View.invisible)
+    ui.textViewAnswer.setText res
+    ui.textViewAnswer.setVisibility (View.visible)
+    ui.buttonShowAnswer.setVisibility (View.invisible)
+    setAnswerShownResult this True
 
 newIntent :: MutableIO Context -> Bool -> IO (MutableIO Intent)
 newIntent context a = do
@@ -40,12 +46,13 @@ setAnswerShownResult activity b = do
     intentData.putExtra extraAnswerShown b
     activity.setResult (Activity.resultOk) intentData
 
-onCreate :: MutableIO Activity -> IO ()
-onCreate !this = do
+onCreate :: MutableIO Activity -> Maybe (MutableIO Bundle) -> IO ()
+onCreate this bundle = do
     context <- this.getApplicationContext
     this.setContentView activityCheat
     intent <- this.getIntent
     answerIsTrue <- intent.getBooleanExtra extraAnswerIsTrue False
     answerTextView <- asTextView this answerTextId
-    showAnswer <- this.findViewById showAnswerButtonId
-    setOnClick showAnswer (cheatHandler showAnswer answerTextView answerIsTrue)
+    showAnswer <- asButton this showAnswerButtonId
+    let ui = CheatUI { buttonShowAnswer = showAnswer, textViewAnswer = answerTextView }
+    setButtonOnClick showAnswer (cheatHandler this ui answerIsTrue)
