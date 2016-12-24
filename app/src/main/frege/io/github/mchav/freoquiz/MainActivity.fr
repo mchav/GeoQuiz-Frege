@@ -65,7 +65,7 @@ data UI = UI { context :: MutableIO Context,
                textView :: MutableIO TextView,
                buttonTrue :: MutableIO Button,
                buttonFalse :: MutableIO Button,
-               buttonCheat :: btnCheat
+               buttonCheat :: MutableIO Button
              }
 
 checkAnswer :: UI -> Bool -> MutableIO View -> IO ()
