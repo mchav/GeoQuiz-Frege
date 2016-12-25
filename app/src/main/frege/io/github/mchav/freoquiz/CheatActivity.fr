@@ -1,10 +1,14 @@
 module io.github.mchav.freoquiz.CheatActivity where
 
+import froid.animation.Animator
 import froid.app.Activity
 import froid.content.Context
 import froid.content.Intent
+import froid.os.Build
 import froid.os.Bundle
+import froid.util.Log
 import froid.view.View
+import froid.view.ViewAnimationUtils
 import froid.widget.Button
 import froid.widget.TextView
 import froid.widget.Toast
@@ -23,13 +27,32 @@ data CheatUI = CheatUI { buttonShowAnswer :: MutableIO Button
 extraAnswerIsTrue = "io.github.mchav.freoquiz.answer_is_true"
 extraAnswerShown  = "io.github.mchav.geoquiz.answer_shown"
 
-cheatHandler :: MutableIO Activity -> CheatUI -> Bool -> MutableIO View -> IO ()
+cheatHandler :: MutableIO Activity -> CheatUI -> Maybe Bool -> MutableIO View -> IO ()
 cheatHandler this ui b v = do
-    let res = if b == True then "True" else "False"
-    ui.textViewAnswer.setText res
-    ui.textViewAnswer.setVisibility (View.visible)
-    ui.buttonShowAnswer.setVisibility (View.invisible)
     setAnswerShownResult this True
+    let hideFunction = if Build.versionSDKInt >= Build.lollipopCode then animateCheat else updateCheated
+    hideFunction this ui b
+
+animateCheat :: MutableIO Activity -> CheatUI -> Maybe Bool -> IO ()
+animateCheat this ui b = do
+    cx <- liftM (`div` 2) ui.buttonShowAnswer.getWidth
+    cy <- liftM (`div` 2) ui.buttonShowAnswer.getHeight
+    radius <- liftM (\n -> n.float) ui.buttonShowAnswer.getWidth
+    buttonView <- asView ui.buttonShowAnswer
+    animation <- ViewAnimationUtils.createCircularReveal buttonView cx cy radius 0
+    addAnimationListener animation (updateCheated' this ui b)
+    animation.start
+
+updateCheated' :: MutableIO Activity -> CheatUI -> Maybe Bool -> MutableIO Animator -> IO ()
+updateCheated' this ui b a = updateCheated this ui b
+
+updateCheated :: MutableIO Activity -> CheatUI -> Maybe Bool -> IO ()
+updateCheated this ui b = do
+     let ans = maybe "Answer Unknown" (show . (== True)) b
+     ui.textViewAnswer.setText ans
+     ui.textViewAnswer.setVisibility (View.visible)
+     ui.buttonShowAnswer.setVisibility (View.invisible)
+     setAnswerShownResult this True
 
 newIntent :: MutableIO Context -> Bool -> IO (MutableIO Intent)
 newIntent context a = do
@@ -37,7 +60,7 @@ newIntent context a = do
     i.putExtra extraAnswerIsTrue a
     return i
 
-wasAnswerShown :: MutableIO Intent -> IO Bool
+wasAnswerShown :: MutableIO Intent -> IO (Maybe Bool)
 wasAnswerShown intent = intent.getBooleanExtra extraAnswerShown false
 
 setAnswerShownResult :: MutableIO Activity -> Bool -> IO ()
@@ -46,13 +69,27 @@ setAnswerShownResult activity b = do
     intentData.putExtra extraAnswerShown b
     activity.setResult (Activity.resultOk) intentData
 
+onSaveInstanceState :: MutableIO TextView -> MutableIO Bundle -> IO ()
+onSaveInstanceState tv b = do
+    str <- getTextString tv
+    let c = if str /= "Answer" then 't' else 'f'
+    b.putChar extraAnswerShown c
+
 onCreate :: MutableIO Activity -> Maybe (MutableIO Bundle) -> IO ()
 onCreate this bundle = do
     context <- this.getApplicationContext
     this.setContentView activityCheat
-    intent <- this.getIntent
-    answerIsTrue <- intent.getBooleanExtra extraAnswerIsTrue False
+    intent <- this.getIntent -- very few cases when this is null
+    mAnswerIsTrue <- intent.getBooleanExtra extraAnswerIsTrue False
     answerTextView <- asTextView this answerTextId
     showAnswer <- asButton this showAnswerButtonId
     let ui = CheatUI { buttonShowAnswer = showAnswer, textViewAnswer = answerTextView }
-    setButtonOnClick showAnswer (cheatHandler this ui answerIsTrue)
+    setButtonOnClick showAnswer (cheatHandler this ui mAnswerIsTrue)
+    this.setOnSavedInstanceState (onSaveInstanceState ui.textViewAnswer)
+    case bundle of
+        Nothing ->  return ()
+        Just b  -> do
+            c <- b.getChar extraAnswerShown
+            case c of
+                Just 't' -> updateCheated this ui mAnswerIsTrue
+                _        -> return ()
