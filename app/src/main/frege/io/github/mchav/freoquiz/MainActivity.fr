@@ -160,8 +160,8 @@ setupUI this = do
 
 initialQuestion :: Maybe (MutableIO Bundle) -> IO String
 initialQuestion b = case b of
-                            Nothing -> return $ (head questions).text
-                            Just s  -> liftM (\(Just cs) -> cs.toString) (s.getCharSequence currentQuestionTag)
+                    	    Nothing -> return $ (head questions).text
+                    	    Just s  -> liftM (\(Just cs) -> cs.toString) (s.getCharSequence currentQuestionTag)
 
 onCreate :: MutableIO Activity -> Maybe (MutableIO Bundle) -> IO ()
 onCreate this savedInstanceState = do
@@ -171,7 +171,7 @@ onCreate this savedInstanceState = do
     c <- getQuestionsCheated savedInstanceState
     let hide = if c.contains firstQuestion then View.invisible else View.visible
     showHideButtons ui hide
-    cheated <- newMVar $ c -- used string because words function doesn't work for storage
+    cheated <- newMVar $ c -- used string because words function throws exception
     this.setOnActivityResult (onActivityResult ui (getTextString ui.textView) cheated)
     this.setOnSavedInstanceState (onSaveInstanceState cheated (ui.textView))
     setButtonOnClick ui.buttonFalse (checkAnswer ui False)
@@ -179,3 +179,4 @@ onCreate this savedInstanceState = do
     setButtonOnClick ui.buttonCheat (cheat this ui)
     buttons <- mapM (asButton this) [btnNextId, btnPrevId]
     zipWithM_ setButtonOnClick buttons [(navigate cheated ui Forward), (navigate cheated ui Back)]
+

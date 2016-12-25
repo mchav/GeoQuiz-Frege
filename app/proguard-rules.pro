@@ -45,6 +45,10 @@
 -keep public class com.google.vending.licensing.ILicensingService
 -keep public class com.android.vending.licensing.ILicensingService
 
+-keepclassmembers class ** {
+   public static *** onCreate(...);
+}
+
 # For native methods, see http://proguard.sourceforge.net/manual/examples.html#native
 -keepclasseswithmembernames class * {
     native <methods>;
@@ -102,3 +106,4 @@
 -dontwarn frege.runtime.**
 -dontwarn frege.runtime.**
 -dontwarn frege.tools.**
+-dontwarn froid.widget.**

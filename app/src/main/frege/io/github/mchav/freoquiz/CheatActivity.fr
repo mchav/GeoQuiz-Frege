@@ -1,5 +1,7 @@
 module io.github.mchav.freoquiz.CheatActivity where
 
+import Control.Concurrent
+
 import froid.animation.Animator
 import froid.app.Activity
 import froid.content.Context
@@ -40,11 +42,8 @@ animateCheat this ui b = do
     radius <- liftM (\n -> n.float) ui.buttonShowAnswer.getWidth
     buttonView <- asView ui.buttonShowAnswer
     animation <- ViewAnimationUtils.createCircularReveal buttonView cx cy radius 0
-    addAnimationListener animation (updateCheated' this ui b)
+    addAnimationListener animation (\ _ -> updateCheated this ui b)
     animation.start
-
-updateCheated' :: MutableIO Activity -> CheatUI -> Maybe Bool -> MutableIO Animator -> IO ()
-updateCheated' this ui b a = updateCheated this ui b
 
 updateCheated :: MutableIO Activity -> CheatUI -> Maybe Bool -> IO ()
 updateCheated this ui b = do
