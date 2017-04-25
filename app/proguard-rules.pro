@@ -102,8 +102,5 @@
     @android.support.annotation.Keep <init>(...);
 }
 
--dontwarn frege.java.**
--dontwarn frege.runtime.**
--dontwarn frege.runtime.**
--dontwarn frege.tools.**
--dontwarn froid.widget.**
+-dontwarn frege.**
+-dontwarn froid.**
